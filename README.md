@@ -1,6 +1,8 @@
 Pinger-lite
 ===========
 
+ROOT PERMISSIONS ARE NEEDED TO RUN THIS APPLICATION
+
 Pinger is a Unix Application which can be used to ping remote hosts with their IP addresses to check their availability.
 * ICMP Echo requests will be sent for every second when the ping is initiated
 * ICMP Echo replies are handled in the application and RTT is calculated.
