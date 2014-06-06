@@ -157,7 +157,11 @@ int main()
 	printf("Enter the IP Address: ");
 	scanf("%s",ip);	
 	// Add IP address of the remote host
-	inet_pton(AF_INET, ip, &remote_host.sin_addr);
+	if( inet_pton(AF_INET, ip, &remote_host.sin_addr)  == 0 )
+	{
+		printf("Please enter the IP address in dotted decimal format!\n");
+		return;
+	}
 
 	uint8_t recvBuffer[PACKET_SIZE];
 
