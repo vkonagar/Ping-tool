@@ -1,0 +1,130 @@
+#include "ping.h"
+
+uint16_t checksum( uint8_t* data, int length) 
+{
+	uint32_t sum = 0;
+	
+	uint16_t* pointer = (uint16_t*)data;
+	uint16_t answer = 0;
+
+	int temp = length;
+	while( temp > 1 )
+	{
+		sum += *pointer++;
+		temp -= 2;
+	}
+	
+	// If the no of bytes are odd, then mop up the byte and add to the sum
+	if( temp == 1 )
+	{	
+		*((uint8_t*)(&answer)) = *((uint8_t*)pointer);
+		sum += answer;
+	}
+
+	// Now accumulated carries are shifted and added
+	// Shift higher 16 bits to lower 16 bits in the sum and add with the existing sum
+
+	sum = (sum >> 16) + (sum & 0x0000FFFF);	// Add the higher order bits to lower order bits
+
+	sum = (sum >> 16) + (sum & 0x0000FFFF); // Add the carry which could be generated due to the above step
+	
+	answer = (uint16_t)~sum;	
+	
+	return answer;
+}
+
+void store_time(uint8_t* src, uint8_t* dst)
+{
+	int i;
+	// 16 bytes are copied from the timeval structure to the data of the ICMP packet
+	for(i=0;i<16;i++)
+	{
+		*dst++ = *src++;
+	}
+}
+
+struct timeval get_difference(struct timeval t1, struct timeval t2)
+{
+	long int diff = ( t2.tv_usec + (1000000*t2.tv_sec) ) - ( t1.tv_usec + (1000000*t1.tv_sec) );
+	struct timeval result;
+	result.tv_sec = diff/1000000;
+	result.tv_usec = diff%1000000;
+	return result;
+}
+
+void send_packet_loop(int sock, struct sockaddr_in remote_host)
+{
+		struct timeval time_start;
+		int length = sizeof(remote_host);
+		uint8_t buffer[TOTAL_ICMP_SIZE];
+		int seq_no = 1;
+		uint16_t pid = htons((uint16_t)getpid());
+		struct icmp_hdr* icmp_p = (struct icmp_hdr*)buffer;	
+		icmp_p->type = ECHO_REQUEST;
+		icmp_p->code = 0;
+		icmp_p->checksum = htons(0);
+		icmp_p->id = pid;
+		icmp_p->seq = htons((uint16_t)seq_no++);
+		memset(icmp_p->data,0,DATA_LENGTH);	
+		
+		// Get the start time
+		gettimeofday(&time_start,NULL);
+
+		// Store it in the packet
+		uint8_t* t_strt_b = (uint8_t*)&time_start;
+
+		// Src(1st arg) --> dst(2nd arg)
+		store_time(t_strt_b,icmp_p->data);
+
+		icmp_p->checksum = checksum(buffer, TOTAL_ICMP_SIZE);
+	
+		sendto(sock, buffer, TOTAL_ICMP_SIZE, 0, (struct sockaddr*)&remote_host, length);
+		// Wait for 1 sec and send the packet
+
+}
+int main()
+{
+	int i;
+	struct timeval time_start,time_end;
+	// Create a socket which listens only for the ICMP packets
+	int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+	if( sock < 0 )
+	{
+		printf("Error in creating the socket \n");
+		exit(0);
+	}
+	struct sockaddr_in remote_host;
+	remote_host.sin_family = AF_INET;
+	
+
+	uint8_t ip[MAX_IP_SIZE];
+	printf("Enter the IP Address: ");
+	scanf("%s",ip);	
+	// Add IP address of the remote host
+	inet_pton(AF_INET, ip, &remote_host.sin_addr);
+
+	uint8_t recvBuffer[PACKET_SIZE];
+	for(;;)
+	{
+		send_packet_loop(sock,remote_host);
+	
+		recvfrom(sock, recvBuffer, PACKET_SIZE , 0, (struct sockaddr*)&remote_host, &length);
+
+		gettimeofday(&time_end,NULL);
+	
+		struct icmp_hdr* hdr = (struct icmp_hdr*)(recvBuffer+sizeof(struct iphdr));
+
+		printf("type = %d code = %d, checksum = %d\n",hdr->type,hdr->code,hdr->checksum);
+	
+		// Using the same time_start variable for storing the extracted time from packet
+		uint8_t* t_end_b = (uint8_t*)&time_start;
+	
+		store_time((uint8_t*)hdr->data,t_end_b);
+	
+		struct timeval result = get_difference(time_start,time_end);
+
+		printf("RTT is %ld.%ld\n",result.tv_sec,result.tv_usec/1000.0);
+		
+		wait(1);	
+	}
+}	
