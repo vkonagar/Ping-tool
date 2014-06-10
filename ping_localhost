@@ -1,0 +1,11 @@
+Enter the IP Address: Pinging 192.168.1.1 with 44 bytes of data... 
+Reply from 192.168.1.1 , ttl = 64, id = 54075, seq = 0 RTT : 0.2789
+Reply from 192.168.1.1 , ttl = 64, id = 54075, seq = 1 RTT : 0.2104
+Reply from 192.168.1.1 , ttl = 64, id = 54075, seq = 2 RTT : 0.2191
+Reply from 192.168.1.1 , ttl = 64, id = 54075, seq = 3 RTT : 0.2044
+Reply from 192.168.1.1 , ttl = 64, id = 54075, seq = 4 RTT : 0.1976
+Reply from 192.168.1.1 , ttl = 64, id = 54075, seq = 5 RTT : 0.2230
+Reply from 192.168.1.1 , ttl = 64, id = 54075, seq = 6 RTT : 0.1620
+No of Sent Packets : 7
+No of Recvd Packets : 7
+Dropped packets : 0

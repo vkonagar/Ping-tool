@@ -73,7 +73,6 @@ int check_packet(uint8_t* buffer, int seq_no)
 
 	if( i_hdr->type == 3 )
 	{
-		printf("Dest host %d and %d \n",i_hdr->type,i_hdr->code);
 		//Dest host unreach, So now check the payload and match
 		return 1;
 	}
@@ -89,7 +88,6 @@ int check_packet(uint8_t* buffer, int seq_no)
 	// Check if the ICMP packet is echo reply
 	if( i_hdr->type != ICMP_ECHO_REPLY )
 	{
-		printf("Icmp not reply %d and %d \n",i_hdr->type,i_hdr->code);
 		return 3;
 	}
 
@@ -135,6 +133,17 @@ void send_packet(int sock, struct sockaddr_in remote_host,int length,int seq_no)
 		// Wait for 1 sec and send the packet
 		no_of_sent_packets++;
 }
+
+void printICMPHeader(uint8_t* head)
+{
+	struct icmp_hdr* header = (struct icmp_hdr*)head;
+	printf("\n\nType : %d",header->type);
+	printf("Code : %d",header->code);
+	printf("Csum : %d",header->checksum);
+	printf("id : %d",header->id);
+	printf("seq : %d",header->seq);
+}
+
 int main()
 {
 	int i;
@@ -157,10 +166,21 @@ int main()
 	printf("Enter the IP Address: ");
 	scanf("%s",ip);	
 	// Add IP address of the remote host
+	struct in_addr* hostIP;
 	if( inet_pton(AF_INET, ip, &remote_host.sin_addr)  == 0 )
 	{
 		printf("Please enter the IP address in dotted decimal format!\n");
-		return;
+		
+		if( ( hostIP = gethostbyname(ip) ) == NULL )
+		{
+			// wrong host name
+			printf("Wrong hostname\n");
+			return;
+		}
+		else
+		{
+			printf("Correct hostname: \n");
+		}
 	}
 
 	uint8_t recvBuffer[PACKET_SIZE];
@@ -196,10 +216,10 @@ int main()
 			FD_SET(sock,&r_set);
 			
 	
-	// If the packet is not received within 2 seconds, the select call returns, so that we can send one more packet
+	// If the packet is not received within 5 seconds, the select call returns, so that we can send one more packet
 	
 			struct timeval timeout;
-			timeout.tv_sec = 5;
+			timeout.tv_sec = 5;	// Timeout value
 			timeout.tv_usec = 0;
 		
 			select(max_fd, &r_set, NULL, NULL, &timeout); 
@@ -210,6 +230,7 @@ int main()
 			}
 			else
 			{
+				// When timeout reaches ( 5 seconds )
 				printf("Request timed out! \n");
 				break;
 			}
@@ -225,6 +246,8 @@ int main()
 			if( valid == 2 || valid == 3 || valid == 4 )
 			{
 				time_out_count++;
+				// If the application gets packets which are not relevant or dest unreachable or checksum error
+				// Then wait untill any of the them reaches their limit either timeout or no of packets are 50
 				if( time_out_count == 50 )
 				{
 					printf("Request timed out! \n");
@@ -236,7 +259,9 @@ int main()
 			gettimeofday(&time_end,NULL);
 
 			struct icmp_hdr* hdr = (struct icmp_hdr*)(recvBuffer+sizeof(struct iphdr));
-	
+			
+			//printICMPHeader((uint8_t*)hdr);
+
 			// Using the same time_start variable for storing the extracted time from packet
 			uint8_t* t_end_b = (uint8_t*)&time_start;
 		
@@ -245,7 +270,7 @@ int main()
 			struct timeval result = get_difference(time_start,time_end);
 
 			struct iphdr* ip_h = (struct iphdr*)recvBuffer;
-			
+
 			inet_ntop(AF_INET, &(recv_host.sin_addr), ip, 10 );
 
 			printf("Reply from %s , ttl = %d, id = %d, seq = %d RTT : %ld.%ld\n", \
