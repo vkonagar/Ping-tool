@@ -1,11 +1,16 @@
 Pinger-lite
 ===========
 
-ROOT PERMISSIONS ARE NEEDED TO RUN THIS APPLICATION
+#### This application needs Root permissions to run (Creating a Raw socket needs a user to be a sudoer)
 
-Pinger is a Unix Application which can be used to ping remote hosts with their IP addresses to check their availability.
-* ICMP Echo requests will be sent for every second when the ping is initiated
-* ICMP Echo replies are handled in the application and RTT is calculated.
-* Sending timestamp will be added to the data portion of the ICMP packet and sent, inorder to calculate the rtt when the packet is received.
-* Raw Socket is used with the protocol IPPROTO_ICMP, so that the ICMP protocol number will be added to the IP header's protocol field.
-* ICMP packet is constructed manually and sent through the socket.
+This application is developed using raw socket which provides an access for creating packets which would use protocols other than TCP,UDP. I formed an ICMP packet (Echo request) and then encapsulated it inside an IP datagram and sent to the destination. The destination ICMP stack will respond to the ICMP packet by sending back the reply ( Echo Reply ). Application waits for the echo reply and confirms the availabilty of the remote host. Round Trip Time is calculated by sending the current time in the request packet and calculating the time when the reply is received and taking the difference of them. I have used a selector ( select system call ) for waiting untill a timeout has been reached. 
+
+####Usage: 
+* You can use this Application to substitute your default ping application.
+* Download this repo as Zip and Extract it.
+* Compile ping.c file
+* Run the output file using sudo
+* Make sure you enter the IP address, not the Domain Name
+
+####Scope:
+* Have to add Domain Name support.
