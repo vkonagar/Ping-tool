@@ -144,8 +144,13 @@ void printICMPHeader(uint8_t* head)
 	printf("seq : %d",header->seq);
 }
 
-int main()
+int main(int argc,char* argv[])
 {
+	if( argc > 2 )
+	{
+		printf("Please enter only 1 argument\n");
+		exit(0);
+	}
 	int i;
 	int seq_no;
 	struct timeval time_start,time_end;
@@ -162,30 +167,18 @@ int main()
 	
 	signal(SIGINT,signal_handler);
 
-	uint8_t ip[MAX_IP_SIZE];
-	printf("Enter the IP Address: ");
-	scanf("%s",ip);	
 	// Add IP address of the remote host
-	struct in_addr* hostIP;
-	if( inet_pton(AF_INET, ip, &remote_host.sin_addr)  == 0 )
+
+	printf("%s\n",argv[1]);
+	if( inet_pton(AF_INET, argv[1], &remote_host.sin_addr)  == 0 )
 	{
-		printf("Please enter the IP address in dotted decimal format!\n");
-		
-		if( ( hostIP = gethostbyname(ip) ) == NULL )
-		{
-			// wrong host name
-			printf("Wrong hostname\n");
-			return;
-		}
-		else
-		{
-			printf("Correct hostname: \n");
-		}
+		printf("IP is not in dotted decimal format!\n");
+		return;
 	}
 
 	uint8_t recvBuffer[PACKET_SIZE];
 
-	printf("Pinging %s with 44 bytes of data... \n",ip);
+	printf("Pinging %s with 44 bytes of data... \n",argv[1]);
 
 	int time_out_count = 0;
 
@@ -271,11 +264,13 @@ int main()
 
 			struct iphdr* ip_h = (struct iphdr*)recvBuffer;
 
-			inet_ntop(AF_INET, &(recv_host.sin_addr), ip, 10 );
+			uint8_t ip[20];
+			
+			inet_ntop(AF_INET, &(recv_host.sin_addr), ip, 20 );
 
-			printf("Reply from %s , ttl = %d, id = %d, seq = %d RTT : %ld.%ld\n", \
+			printf("Reply from %s , ttl = %d, id = %d, seq = %d RTT : %ld.%ld seconds\n", \
 					 ip, ip_h->ttl, hdr->id,\
-					seq_no, result.tv_sec,result.tv_usec);
+					seq_no, result.tv_sec,(result.tv_usec));
 			no_of_replies_rcvd++;
 			break;	
 		}
