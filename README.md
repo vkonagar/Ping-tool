@@ -7,7 +7,7 @@ Pinger-lite
 * An ICMP packet is crafted (Echo request), its then encapsulated inside an IP datagram, and sent.
 * The destination ICMP stack will respond to the ICMP packet by sending back the reply ( Echo Reply ). Application waits for the echo reply and confirms the availabilty of the remote host. 
 * Round Trip Time is calculated by calculating the difference between the timestamp when the request packet is sent and the timestamp when the reply is received. 
-* I have used a IO Multiplexing ( select system call ) for waiting until a timeout has been reached. 
+* I have used IO Multiplexing ( select system call ) for waiting until a timeout has been reached. 
 
 ## Usage: 
 * You can use this Application to substitute your default ping application.
